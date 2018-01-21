@@ -141,13 +141,6 @@ unsigned long nibble_sort (unsigned long arg)
   return 0;
 }
 
-int main(void)
-{
-	printf("%lx\n",byte_sort(0x0403deadbeef0201));
-	printf("%lx\n",nibble_sort(0x0403deadbeef0201));
-	return 0;
-}
-
 /*********************************************************************
  *
  * name_list()
@@ -177,7 +170,53 @@ struct elt {
 
 struct elt *name_list (void)
 {
-  return NULL;
+    const char *name = "monish";
+
+    struct elt *first = (struct elt*)malloc(sizeof(struct elt));
+    if(first == NULL)
+        return NULL;
+    first->val = name[0];
+
+    struct elt *runner = first;
+    int i;
+    for (i = 1; i < 7; i++)
+    {
+        struct elt *alloc = (struct elt*)malloc(sizeof(struct elt));
+        if(alloc == NULL)
+        {
+                runner = first;
+                while(runner != NULL)
+                {
+                    struct elt * temp = runner;
+                    runner = runner->link;
+                    free(temp);
+                }
+                return NULL;
+        }
+        alloc->val = name[i];
+        runner->link = alloc;
+        runner = runner->link;
+    }
+  return first;
+}
+
+int main(void)
+{
+    //printf("%lx\n",byte_sort(0x0403deadbeef0201));
+    //printf("%lx\n",nibble_sort(0x0403deadbeef0201));
+    struct elt *answer = name_list();
+    if(answer == NULL)
+    {
+        printf("answer was null\n");
+        return 0;
+    }
+    while(answer->link != NULL)
+    {
+        printf("%c ",answer->val);
+        answer = answer->link;
+    }
+    printf("\n");
+    return 0;
 }
 
 /*********************************************************************
