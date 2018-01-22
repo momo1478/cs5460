@@ -200,24 +200,7 @@ struct elt *name_list (void)
   return first;
 }
 
-int main(void)
-{
-    //printf("%lx\n",byte_sort(0x0403deadbeef0201));
-    //printf("%lx\n",nibble_sort(0x0403deadbeef0201));
-    struct elt *answer = name_list();
-    if(answer == NULL)
-    {
-        printf("answer was null\n");
-        return 0;
-    }
-    while(answer->link != NULL)
-    {
-        printf("%c ",answer->val);
-        answer = answer->link;
-    }
-    printf("\n");
-    return 0;
-}
+
 
 /*********************************************************************
  *
@@ -246,6 +229,80 @@ enum format_t {
 
 void convert (enum format_t mode, unsigned long value)
 {
+	int base = 0;
+	int bits = 0;
+	int len = 0;
+	switch(mode)
+	{
+		case OCT: { base = 8; bits = 3; len = 22; break;}
+		case BIN: { base = 2; bits = 1; len = 64; break;}
+		case HEX: { base = 16; bits = 4; len = 16; break;}
+	}
+
+	unsigned long remainder = value;
+	char result[len];
+
+	int i; int ri = 0;
+	for (i = 0; i < 64; i+=bits)
+	{
+		if(base == 16)
+		{
+			switch(remainder % base)
+			{
+				case 10: { result[ri] = 'a'; break; }
+				case 11: { result[ri] = 'b'; break; }
+				case 12: { result[ri] = 'c'; break; }
+				case 13: { result[ri] = 'd'; break; }
+				case 14: { result[ri] = 'e'; break; }
+				case 15: { result[ri] = 'f'; break; }
+
+				default:
+					result[ri] = (remainder % base) + '0';
+			}
+		}
+		else
+		{
+			result[ri] = (remainder % base) + '0';
+		}
+		
+		ri++;
+		remainder /= base;
+	}
+
+	for (i = len - 1; i >= 0; i--)
+	{
+		putc(result[i],stdout);
+	}
+	putc('\n',stdout);
+}
+
+int main(void)
+{
+    //printf("%lx\n",byte_sort(0x0403deadbeef0201));
+    //printf("%lx\n",nibble_sort(0x0403deadbeef0201));
+    // struct elt *answer = name_list();
+    // if(answer == NULL)
+    // {
+    //     printf("answer was null\n");
+    //     return 0;
+    // }
+    // while(answer->link != NULL)
+    // {
+    //     printf("%c ",answer->val);
+    //     answer = answer->link;
+    // }
+    // printf("\n");
+    // return 0;
+	convert(HEX, 0xdeadbeef);
+	convert(HEX, 0xffffffffffffffff);
+	convert(HEX, 0x0);
+	convert(BIN, 0xdeadbeef);
+	convert(BIN, 0xffffffffffffffff);
+	convert(BIN, 0x0);
+	convert(OCT, 0xdeadbeef);
+	convert(OCT, 0xffffffffffffffff);
+	convert(OCT, 0x0);
+
 }
 
 /*********************************************************************
