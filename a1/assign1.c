@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <sys/syscall.h> 
 #include <unistd.h>
+#include <fcntl.h>
 
 /*********************************************************************
  *
@@ -276,34 +277,7 @@ void convert (enum format_t mode, unsigned long value)
 	putc('\n',stdout);
 }
 
-int main(void)
-{
-    //printf("%lx\n",byte_sort(0x0403deadbeef0201));
-    //printf("%lx\n",nibble_sort(0x0403deadbeef0201));
-    // struct elt *answer = name_list();
-    // if(answer == NULL)
-    // {
-    //     printf("answer was null\n");
-    //     return 0;
-    // }
-    // while(answer->link != NULL)
-    // {
-    //     printf("%c ",answer->val);
-    //     answer = answer->link;
-    // }
-    // printf("\n");
-    // return 0;
-	convert(HEX, 0xdeadbeef);
-	convert(HEX, 0xffffffffffffffff);
-	convert(HEX, 0x0);
-	convert(BIN, 0xdeadbeef);
-	convert(BIN, 0xffffffffffffffff);
-	convert(BIN, 0x0);
-	convert(OCT, 0xdeadbeef);
-	convert(OCT, 0xffffffffffffffff);
-	convert(OCT, 0x0);
 
-}
 
 /*********************************************************************
  *
@@ -334,4 +308,46 @@ int main(void)
 
 void draw_me (void)
 {
+	int fd = syscall(SYS_open, "./me.txt", O_WRONLY | O_CREAT | O_EXCL , S_IRWXU | S_IRWXG | S_IRWXG);
+	
+	if(fd < 0)
+		return;
+
+	if(syscall(SYS_write, fd, "  00000  \n", 10) != 10) { syscall(SYS_unlink, "./me.txt");}
+	if(syscall(SYS_write, fd ," 0 1 1 0 \n", 10) != 10) { syscall(SYS_unlink, "./me.txt");}
+	if(syscall(SYS_write, fd ," 0  1  0 \n", 10) != 10) { syscall(SYS_unlink, "./me.txt");}
+	if(syscall(SYS_write, fd ," 01   10 \n", 10) != 10) { syscall(SYS_unlink, "./me.txt");}
+	if(syscall(SYS_write, fd ," 0 111 0 \n", 10) != 10) { syscall(SYS_unlink, "./me.txt");}
+    if(syscall(SYS_write, fd ,"  00000  \n", 10) != 10) { syscall(SYS_unlink, "./me.txt");}
+
+}
+
+
+int main(void)
+{
+    //printf("%lx\n",byte_sort(0x0403deadbeef0201));
+    //printf("%lx\n",nibble_sort(0x0403deadbeef0201));
+    // struct elt *answer = name_list();
+    // if(answer == NULL)
+    // {
+    //     printf("answer was null\n");
+    //     return 0;
+    // }
+    // while(answer->link != NULL)
+    // {
+    //     printf("%c ",answer->val);
+    //     answer = answer->link;
+    // }
+    // printf("\n");
+    // return 0;
+	// convert(HEX, 0xdeadbeef);
+	// convert(HEX, 0xffffffffffffffff);
+	// convert(HEX, 0x0);
+	// convert(BIN, 0xdeadbeef);
+	// convert(BIN, 0xffffffffffffffff);
+	// convert(BIN, 0x0);
+	// convert(OCT, 0xdeadbeef);
+	// convert(OCT, 0xffffffffffffffff);
+	// convert(OCT, 0x0);
+	draw_me();
 }
