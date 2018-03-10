@@ -29,6 +29,8 @@
 #include <linux/device.h>
 #include <linux/mutex.h>
 #include <linux/jiffies.h>
+#include <linux/unistd.h>
+#include <linux/sched.h>
 #include <asm/uaccess.h>
 
 #include "sleepy.h"
