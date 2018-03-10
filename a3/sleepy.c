@@ -28,7 +28,7 @@
 #include <linux/cdev.h>
 #include <linux/device.h>
 #include <linux/mutex.h>
-#include <linux/jiffies>
+#include <linux/jiffies.h>
 #include <asm/uaccess.h>
 
 #include "sleepy.h"
@@ -91,14 +91,19 @@ ssize_t
 sleepy_read(struct file *filp, char __user *buf, size_t count, 
 	    loff_t *f_pos)
 {
+  int minor;
+
   struct sleepy_dev *dev = (struct sleepy_dev *)filp->private_data;
   ssize_t retval = 0;
 	
   if (mutex_lock_killable(&dev->sleepy_mutex))
     return -EINTR;
 	
+  mutex_unlock(&dev->sleepy_mutex);
   /* YOUR CODE HERE */
-    int minor;
+  flag = 0;
+  wake_up_interruptible_all(&wq);
+  
 	minor = (int)iminor(filp->f_path.dentry->d_inode);
 	printk("SLEEPY_READ DEVICE (%d): Process is waking everyone up. \n", minor);
   /* END YOUR CODE */
@@ -111,25 +116,26 @@ ssize_t
 sleepy_write(struct file *filp, const char __user *buf, size_t count, 
 	     loff_t *f_pos)
 {
+  int minor;
+  int timeToWait;
+
   struct sleepy_dev *dev = (struct sleepy_dev *)filp->private_data;
   ssize_t retval = 0;
 	
   if (mutex_lock_killable(&dev->sleepy_mutex))
     return -EINTR;
 	
+  mutex_unlock(&dev->sleepy_mutex);
   /* YOUR CODE HERE */
 	if(count != 4)
 		return -EINVAL;
 
-	unsigned long timeToWait;
-	copy_from_user(&timeToWait,&buf, 4);
+  copy_from_user(&timeToWait,&buf, 4);
 
-	wait_even_interruptible_timeout(&wq, flag != 0, timeToWait);
-	
+  retval = jiffies_to_msecs(wait_event_interruptible_timeout(wq, flag != 0, msecs_to_jiffies(timeToWait * 1000) )) * 1000;
 
-	int minor;
-	minor = (int)iminor(filp->f_path.dentry->d_inode);
-	printk("SLEEPY_WRITE DEVICE (%d): remaining = %zd \n", minor, remaining_seconds);
+  minor = (int)iminor(filp->f_path.dentry->d_inode);
+  printk("SLEEPY_WRITE DEVICE (%d): remaining = %zd \n", minor, retval);
   /* END YOUR CODE */
 	
   mutex_unlock(&dev->sleepy_mutex);
