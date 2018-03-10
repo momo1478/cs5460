@@ -22,6 +22,7 @@ __attribute__((section("__versions"))) = {
 	{ 0xda6982e5, __VMLINUX_SYMBOL_STR(device_create) },
 	{ 0x987fde2e, __VMLINUX_SYMBOL_STR(cdev_add) },
 	{ 0xb46aca86, __VMLINUX_SYMBOL_STR(cdev_init) },
+	{ 0xf432dd3d, __VMLINUX_SYMBOL_STR(__init_waitqueue_head) },
 	{ 0xac7f6dfd, __VMLINUX_SYMBOL_STR(__mutex_init) },
 	{ 0xd2b09ce5, __VMLINUX_SYMBOL_STR(__kmalloc) },
 	{ 0xd7bd463f, __VMLINUX_SYMBOL_STR(__class_create) },
@@ -50,4 +51,4 @@ __attribute__((section(".modinfo"))) =
 "depends=";
 
 
-MODULE_INFO(srcversion, "60EBA0C72CB341E72ED1E1B");
+MODULE_INFO(srcversion, "B0DD73767EA50CA9EE31F7E");

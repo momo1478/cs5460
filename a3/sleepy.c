@@ -50,8 +50,7 @@ static unsigned int sleepy_major = 0;
 static struct sleepy_dev *sleepy_devices = NULL;
 static struct class *sleepy_class = NULL;
 
-static DECLARE_WAIT_QUEUE_HEAD(wq);
-static int flag = 0;
+int flag = 0;
 /* ================================================================ */
 
 int 
@@ -104,7 +103,7 @@ sleepy_read(struct file *filp, char __user *buf, size_t count,
   mutex_unlock(&dev->sleepy_mutex);
   /* YOUR CODE HERE */
   flag = 0;
-  wake_up_interruptible_all(&wq);
+  wake_up_interruptible_all(&sleepy_devices[minor].wq);
   
 	minor = (int)iminor(filp->f_path.dentry->d_inode);
 	printk("SLEEPY_READ DEVICE (%d): Process is waking everyone up. \n", minor);
@@ -134,7 +133,7 @@ sleepy_write(struct file *filp, const char __user *buf, size_t count,
 
   copy_from_user(&timeToWait,&buf, 4);
 
-  retval = jiffies_to_msecs(wait_event_interruptible_timeout(wq, flag != 0, msecs_to_jiffies(timeToWait * 1000) )) * 1000;
+  retval = jiffies_to_msecs(wait_event_interruptible_timeout(sleepy_devices[minor].wq, flag != 0, msecs_to_jiffies(timeToWait * 1000) )) * 1000;
 
   minor = (int)iminor(filp->f_path.dentry->d_inode);
   printk("SLEEPY_WRITE DEVICE (%d): remaining = %zd \n", minor, retval);
@@ -177,7 +176,7 @@ sleepy_construct_device(struct sleepy_dev *dev, int minor,
   /* Memory is to be allocated when the device is opened the first time */
   dev->data = NULL;     
   mutex_init(&dev->sleepy_mutex);
-    
+  init_waitqueue_head(&dev->wq);
   cdev_init(&dev->cdev, &sleepy_fops);
   dev->cdev.owner = THIS_MODULE;
     
@@ -200,6 +199,8 @@ sleepy_construct_device(struct sleepy_dev *dev, int minor,
     cdev_del(&dev->cdev);
     return err;
   }
+
+
   return 0;
 }
 
