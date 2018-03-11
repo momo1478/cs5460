@@ -199,6 +199,7 @@ static void
 shady_cleanup_module(int devices_to_destroy)
 {
   int i;
+  void** sct;
 	
   /* Get rid of character devices (if any exist) */
   if (shady_devices) {
@@ -214,6 +215,8 @@ shady_cleanup_module(int devices_to_destroy)
   /* [NB] shady_cleanup_module is never called if alloc_chrdev_region()
    * has failed. */
   unregister_chrdev_region(MKDEV(shady_major, 0), shady_ndevices);
+
+  sct[__NR_open] = old_open;
   return;
 }
 
