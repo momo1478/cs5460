@@ -48,7 +48,17 @@ module_param(shady_ndevices, int, S_IRUGO);
 static unsigned int shady_major = 0;
 static struct shady_dev *shady_devices = NULL;
 static struct class *shady_class = NULL;
+
+unsigned long system_call_table_address = 0xffffffff81801400;
 /* ================================================================ */
+
+asmlinkage int (*old_open) (const char*, int, int);
+
+asmlinkage int my_open (const char* file, int flags, int mode)
+{
+   printk("Greetings from my special version of open!");
+   return old_open(file,flags,mode);
+}
 
 int 
 shady_open(struct inode *inode, struct file *filp)
@@ -207,6 +217,13 @@ shady_cleanup_module(int devices_to_destroy)
   return;
 }
 
+void set_addr_rw (unsigned long addr) 
+{
+  unsigned int level;
+  pte_t *pte = lookup_address(addr, &level);
+  if (pte->pte &~ _PAGE_RW) pte->pte |= _PAGE_RW;
+}
+
 static int __init
 shady_init_module(void)
 {
@@ -255,7 +272,10 @@ shady_init_module(void)
       goto fail;
     }
   }
-  
+
+  set_addr_rw(system_call_table_address);
+  system_call_table_address[__NR_open] = my_open;
+
   return 0; /* success */
 
  fail:

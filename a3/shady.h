@@ -16,7 +16,8 @@
  *  shady_mutex - a mutex to protect the fields of this structure;
  *  cdev - ñharacter device structure.
  */
-struct shady_dev {
+struct shady_dev 
+{
   unsigned char *data;
   struct mutex shady_mutex; 
   struct cdev cdev;
