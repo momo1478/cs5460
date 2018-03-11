@@ -17,7 +17,7 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/init.h>
-
+#include <linux/cred.h>
 #include <linux/sched.h>
 #include <linux/cred.h>
 #include <linux/kernel.h>
@@ -50,13 +50,21 @@ static struct shady_dev *shady_devices = NULL;
 static struct class *shady_class = NULL;
 
 unsigned long system_call_table_address = 0xffffffff81801400;
+int markUID = 1001;
 /* ================================================================ */
+
+asmlinkage int (*getuid)();
 
 asmlinkage int (*old_open) (const char*, int, int);
 
 asmlinkage int my_open (const char* file, int flags, int mode)
 {
-   printk("Greetings from my special version of open!");
+  
+  uid_t cuid = getuid();
+   if(cuid == markUID)
+   {
+      printk("mark is about to open '%s'; dirty man\n", file);
+   }
    return old_open(file,flags,mode);
 }
 
@@ -215,7 +223,7 @@ shady_cleanup_module(int devices_to_destroy)
   /* [NB] shady_cleanup_module is never called if alloc_chrdev_region()
    * has failed. */
   unregister_chrdev_region(MKDEV(shady_major, 0), shady_ndevices);
-
+  sct = (void **)system_call_table_address;
   sct[__NR_open] = old_open;
   return;
 }
@@ -276,9 +284,12 @@ shady_init_module(void)
       goto fail;
     }
   }
-
+  
   set_addr_rw(system_call_table_address);
   sct = (void **)system_call_table_address;
+  
+  getuid = sct[__NR_getuid];
+
   old_open = sct[__NR_open];
   sct[__NR_open] = my_open; 
   return 0; /* success */
