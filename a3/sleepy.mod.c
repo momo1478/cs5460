@@ -37,9 +37,8 @@ __attribute__((section("__versions"))) = {
 	{        0, __VMLINUX_SYMBOL_STR(schedule_timeout) },
 	{ 0x37befc70, __VMLINUX_SYMBOL_STR(jiffies_to_msecs) },
 	{ 0x3bd1b1f6, __VMLINUX_SYMBOL_STR(msecs_to_jiffies) },
-	{ 0x4f6b400b, __VMLINUX_SYMBOL_STR(_copy_from_user) },
-	{ 0xcf21d241, __VMLINUX_SYMBOL_STR(__wake_up) },
 	{ 0x1eecf3fc, __VMLINUX_SYMBOL_STR(mutex_unlock) },
+	{ 0xcf21d241, __VMLINUX_SYMBOL_STR(__wake_up) },
 	{ 0x5f6629de, __VMLINUX_SYMBOL_STR(mutex_lock_killable) },
 	{ 0x27e1a049, __VMLINUX_SYMBOL_STR(printk) },
 	{ 0xbdfb6dbb, __VMLINUX_SYMBOL_STR(__fentry__) },
@@ -51,4 +50,4 @@ __attribute__((section(".modinfo"))) =
 "depends=";
 
 
-MODULE_INFO(srcversion, "B5BC04B954BAAFFBF17422B");
+MODULE_INFO(srcversion, "0269978F78845E1DACCB7C7");
