@@ -33,6 +33,36 @@ int main(void) {
     }
   }
 
+  for (i = 0; i < 10; i++) {
+    if (fork() == 0) {
+      /* writing to device 0*/
+      fd = open("/dev/sleepy4", O_RDWR);
+      assert(fd != -1);
+
+      sleep_len = 5;
+      r = write(fd, &sleep_len, sizeof sleep_len);
+      assert(r >= 0);
+      close(fd);
+
+      return 0;
+    }
+  }
+
+  for (i = 0; i < 10; i++) {
+    if (fork() == 0) {
+      /* writing to device 0*/
+      fd = open("/dev/sleepy9", O_RDWR);
+      assert(fd != -1);
+
+      sleep_len = 10;
+      r = write(fd, &sleep_len, sizeof sleep_len);
+      assert(r >= 0);
+      close(fd);
+
+      return 0;
+    }
+  }
+
   /* sleep for a second*/
   sleep(1);
 
@@ -51,6 +81,21 @@ int main(void) {
   r = read(fd, NULL, 0);
   assert(r >= 0);
   close(fd);
+
+  for (i = 0; i < 10; i++) {
+    if (fork() == 0) {
+      /* writing to device 0*/
+      fd = open("/dev/sleepy9", O_RDWR);
+      assert(fd != -1);
+
+      sleep_len = 3;
+      r = write(fd, &sleep_len, sizeof sleep_len);
+      assert(r >= 0);
+      close(fd);
+
+      return 0;
+    }
+  }
 
   for (i = 0; i < 10; i++)
     wait(NULL);

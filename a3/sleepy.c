@@ -129,16 +129,17 @@ sleepy_write(struct file *filp, const char __user *buf, size_t count,
   if(count != 4)
 		return -EINVAL;
 
-  timeToWait = *((int *)buf);
+  copy_from_user(&timeToWait,buf,4); 
   minor = (int)iminor(filp->f_path.dentry->d_inode);
 
   //printk("ttw : %d \n", timeToWait);
   //printk("m to j : %zd \n", msecs_to_jiffies(timeToWait * 1000));
   mutex_unlock(&dev->sleepy_mutex);
+  sleepy_devices[minor].flag = 0;
   retval = jiffies_to_msecs(wait_event_interruptible_timeout(sleepy_devices[minor].wq
                            ,sleepy_devices[minor].flag != 0
                            ,msecs_to_jiffies(timeToWait * 1000) ) ) / 1000;
-  //sleepy_devices[minor].flag = 0;
+  sleepy_devices[minor].flag = 1;
   printk("SLEEPY_WRITE DEVICE (%d): remaining = %zd \n", minor, retval);
   /* END YOUR CODE */
   
