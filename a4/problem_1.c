@@ -14,9 +14,17 @@ int* tickets;
 
 volatile int in_cs;
 
+int sleepFlag;
+
 void lock(int);
 void unlock(int);
 void* Thread(void*);
+
+typedef struct t_info 
+{
+	pthread_t pid;
+	int n;
+} t_info;
 
 int main(int argc, char **argv)
 {
@@ -34,7 +42,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	pthread_t threads[num_threads]; 
+	t_info threads[num_threads]; 
 
 	entering = malloc(num_threads * sizeof(int));
 	tickets  = malloc(num_threads * sizeof(int));
@@ -48,16 +56,25 @@ int main(int argc, char **argv)
  	memset(entering, 0, num_threads * sizeof(int));
  	memset(tickets, 0, num_threads * sizeof(int));
  	
+ 	in_cs = 0;
+ 	sleepFlag = 0;
+
  	int i;
  	for(i = 0; i < num_threads; i++)
  	{
- 		pthread_create(&threads[i], NULL, &Thread, (void *)&i);
+ 		pthread_create(&(threads[i].pid), NULL, &Thread, &threads[i]);
  	}
+ 	
+ 	sleep(num_seconds);
+ 	
 
  	for(i = 0; i < num_threads; i++)
  	{
- 		pthread_join(threads[i], NULL);
+ 		pthread_join((threads[i].pid), NULL);
+ 		printf("Thread %d entered the critical section %d times!\n", i, (int)threads[i].n );
  	}
+ 	sleepFlag = 1;
+ 	
 
  	return 0;
 }
@@ -76,7 +93,6 @@ void lock(int pid)
      
      entering[pid] = false;
 
-
      int j;
      for (j = 0; j < num_threads; ++j)
      {
@@ -85,7 +101,7 @@ void lock(int pid)
              while (entering[j]) 
              { /* nothing */ }
 
-             while ( (tickets[j] != 0) && tickets[j] < tickets[i] )
+             while ( (tickets[j] != 0) && tickets[j] < tickets[j] )
              { /* nothing */ }
 
          }
@@ -97,12 +113,13 @@ void unlock(int pid)
 	tickets[pid] = 0;
 }
 
-void * Thread(void *pid)
+void * Thread(void * info)
 {
-	int ipid = *((int *)pid);
-	while(true)
-	{
+	int ipid = ((t_info*)info)->pid;
+	while(sleepFlag)
+	{	
 		lock(ipid);
+			(((t_info*)info)->n)++;
 			assert (in_cs==0);
 	 		in_cs++;
 	 		assert (in_cs==1);
@@ -113,4 +130,5 @@ void * Thread(void *pid)
 	 		in_cs=0;
 		unlock(ipid);
 	}
+	return NULL;
 }
