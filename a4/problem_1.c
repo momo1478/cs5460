@@ -6,11 +6,18 @@
 #include <stdbool.h>
 #include <assert.h>
 
+typedef struct t_info 
+{
+	int tnum;
+	int n;
+} t_info;
+
 int num_threads;
 int num_seconds;
 
 int* entering; //boolean array
 int* tickets;
+t_info* infos;
 
 volatile int in_cs;
 
@@ -19,12 +26,6 @@ int sleepFlag;
 void lock(int);
 void unlock(int);
 void* Thread(void*);
-
-typedef struct t_info 
-{
-	pthread_t pid;
-	int n;
-} t_info;
 
 int main(int argc, char **argv)
 {
@@ -42,10 +43,11 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	t_info threads[num_threads]; 
-
+	infos  = malloc(num_threads * sizeof(t_info));
 	entering = malloc(num_threads * sizeof(int));
 	tickets  = malloc(num_threads * sizeof(int));
+
+	pthread_t threads[num_threads];
 
 	if(entering == NULL || tickets == NULL)
 	{
@@ -53,73 +55,72 @@ int main(int argc, char **argv)
 		return 1;
 	}
  
- 	memset(entering, 0, num_threads * sizeof(int));
+ 	memset(entering, false, num_threads * sizeof(int));
  	memset(tickets, 0, num_threads * sizeof(int));
  	
  	in_cs = 0;
- 	sleepFlag = 0;
+ 	sleepFlag = 1;
 
  	int i;
  	for(i = 0; i < num_threads; i++)
  	{
- 		pthread_create(&(threads[i].pid), NULL, &Thread, &threads[i]);
+ 		infos[i].n = 0;
+ 		infos[i].tnum = i;
+ 		pthread_create(&threads[i], NULL, &Thread, (void *)&infos[i]);
  	}
  	
  	sleep(num_seconds);
  	
-
  	for(i = 0; i < num_threads; i++)
  	{
- 		pthread_join((threads[i].pid), NULL);
- 		printf("Thread %d entered the critical section %d times!\n", i, (int)threads[i].n );
+ 		pthread_join(threads[i], NULL);
+ 		printf("Thread %d entered the critical section %d times!\n", i, (int)infos[i].n );
  	}
- 	sleepFlag = 1;
- 	
 
+ 	sleepFlag = 0;
+ 	
  	return 0;
 }
 
-void lock(int pid)
+void lock(int i)
 {
-	 entering[pid] = true;
+	 entering[i] = true;
      
      int max = 0;
-     int i;
-     for (i = 0; i < num_threads; i++)
+     int k;
+     for (k = 0; k < num_threads; k++)
      {
-         max = tickets[i] > max ? tickets[i] : max;
+         max = tickets[k] > max ? tickets[k] : max;
      }
-     tickets[pid] =  1 + max; 
+     tickets[i] =  1 + max; 
      
-     entering[pid] = false;
+     entering[i] = false;
 
      int j;
      for (j = 0; j < num_threads; ++j)
      {
-         if (j != pid)
-         {
-             while (entering[j]) 
-             { /* nothing */ }
+        while (entering[j]) 
+        { /* nothing */ }
 
-             while ( (tickets[j] != 0) && tickets[j] < tickets[j] )
-             { /* nothing */ }
-
-         }
+        while ( (tickets[j] != 0) && tickets[j] < tickets[i] )
+        { /* nothing */ }
      }
 }
 
-void unlock(int pid)
+void unlock(int i)
 {
-	tickets[pid] = 0;
+	tickets[i] = 0;
 }
 
 void * Thread(void * info)
 {
-	int ipid = ((t_info*)info)->pid;
+	int tn = ((t_info*)info)->tnum;
+	//printf("pid = %d and n = %d\n",ipid ,(((t_info*)info)->n));
+
 	while(sleepFlag)
 	{	
-		lock(ipid);
-			(((t_info*)info)->n)++;
+		lock(tn);
+			//(((t_info*)info)->n)++;
 			assert (in_cs==0);
 	 		in_cs++;
 	 		assert (in_cs==1);
@@ -128,7 +129,7 @@ void * Thread(void * info)
 	 		in_cs++;
 	 		assert (in_cs==3);
 	 		in_cs=0;
-		unlock(ipid);
+		unlock(tn);
 	}
 	return NULL;
 }
