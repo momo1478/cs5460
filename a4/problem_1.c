@@ -42,8 +42,8 @@ int main(int argc, char **argv)
 		printf("Invalid arguments.\n");
 		return 1;
 	}
-
 	infos  = malloc(num_threads * sizeof(t_info));
+
 	entering = malloc(num_threads * sizeof(int));
 	tickets  = malloc(num_threads * sizeof(int));
 
@@ -116,11 +116,10 @@ void * Thread(void * info)
 {
 	int tn = ((t_info*)info)->tnum;
 	//printf("pid = %d and n = %d\n",ipid ,(((t_info*)info)->n));
-
 	while(sleepFlag)
 	{	
 		lock(tn);
-			//(((t_info*)info)->n)++;
+			(((t_info*)info)->n)++;
 			assert (in_cs==0);
 	 		in_cs++;
 	 		assert (in_cs==1);
