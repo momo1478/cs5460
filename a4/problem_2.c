@@ -113,14 +113,14 @@ void lock(int i)
      	//if(i != j)
      	{
 	        while (entering[j] != 0) 
-	        { /* nothing */ }
+	        { sched_yield(); }
 
 	        while ( ( tickets[j] != 0) &&
 	        		( tickets[j] < tickets[i]  ||
 	                ( tickets[i] == tickets[j] && i < j) 
 	                )
 	              )
-	        { /* nothing */ }
+	        { sched_yield(); }
    		}
      }
 }
