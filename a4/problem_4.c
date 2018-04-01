@@ -12,71 +12,68 @@ typedef struct t_info
 	int n;
 } t_info;
 
+struct spin_lock_t
+{
+	volatile int lock;
+} spin_lock_t;
+
+struct spin_lock_t* lock;
+
 int num_threads;
 int num_seconds;
 
-volatile int* entering; //boolean array
-volatile int* tickets;
 t_info* infos;
 pthread_t* threads;
 
 volatile int in_cs = 0;
 volatile int sleepFlag;
 
+void spin_lock (struct spin_lock_t *s);
+void spin_unlock (struct spin_lock_t *s);
+
 void mfence (void) {
   asm volatile ("mfence" : : : "memory");
 }
 
-int max()
+/*
+ * atomic_cmpxchg
+ * 
+ * equivalent to atomic execution of this code:
+ *
+ * if (*ptr == old) {
+ *   *ptr = new;
+ *   return old;
+ * } else {
+ *   return *ptr;
+ * }
+ *
+ */
+static inline int atomic_cmpxchg (volatile int *ptr, int old, int new)
 {
-	 int max = 0;
-     int k;
-     for (k = 0; k < num_threads; k++)
-     {
-         max = tickets[k] > max ? tickets[k] : max;
-     }
-     return max;
+  int ret;
+  asm volatile ("lock cmpxchgl %2,%1"
+    : "=a" (ret), "+m" (*ptr)     
+    : "r" (new), "0" (old)      
+    : "memory");         
+  return ret;                            
 }
 
-void lock(int i)
+void spin_lock (struct spin_lock_t *s)
 {
-	 entering[i] = 1;
-     mfence(); //This mfence ensures that the first while loop does its job in making other threads stop before entering the second while loop. In the mean time tickets will be updated. 
-
-     tickets[i] =  1 + max(NULL); 
-     
-     entering[i] = 0;
-     mfence(); //This mfence releases threads that are waiting on the first while loop. At this point tickets should be force update by this mfence as well as entering.
-
-     int j;
-     for (j = 0; j < num_threads; j++)
-     {
-     		mfence(); //This mfence ensures that entering and tickets are up to date for thier while/locking loop checks.
-	        while (entering[j] != 0) 
-	        {  }
-
-	        while ( ( tickets[j] != 0) &&
-	        		( tickets[j] < tickets[i]  ||
-	                ( tickets[i] == tickets[j] && i < j) 
-	                )
-	              )
-	        {  }
-     }
+	while (atomic_cmpxchg(&(s->lock), 0,1)) { }
 }
 
-void unlock(int i)
+void spin_unlock (struct spin_lock_t *s)
 {
-	tickets[i] = 0;
-	mfence(); //This fence ensures that tickets counts are reset properly.
+	atomic_cmpxchg(&(s->lock),1,0);
 }
 
 void * Thread(void * info)
 {
-	//It's unnecessary to put fences in the critical section because the locks should 
+	//printf("tnum = %d and n = %d and in_cs = %d\n", tn ,(((t_info*)info)->n), in_cs);
 	while(sleepFlag)
-	{	
-		int tn = ((t_info*)info)->tnum;
-		lock(tn);
+	{			
+		spin_lock(lock);
 		(((t_info*)info)->n)++;
 			assert (in_cs==0);
 	 		in_cs++;
@@ -86,7 +83,7 @@ void * Thread(void * info)
 	 		in_cs++;
 	 		assert (in_cs==3);
 	 		in_cs=0;
-		unlock(tn);
+		spin_unlock(lock);
 	}
 	return NULL;
 }
@@ -110,23 +107,18 @@ int main(int argc, char **argv)
 	}
 
 	infos    = malloc(num_threads * sizeof(t_info));
-	entering = malloc(num_threads * sizeof(int));
-	tickets  = malloc(num_threads * sizeof(int));
 	threads  = malloc(num_threads * sizeof(pthread_t));
+	lock   = malloc(sizeof(spin_lock_t));
+	
 
-	if(entering == NULL || tickets == NULL || threads == NULL || infos == NULL)
+	if(threads == NULL || infos == NULL || lock == NULL)
 	{
 		fprintf(stderr, "malloc failed \n");
 		return 1;
 	}
+	lock->lock = 0;
  	
  	int i;
- 	for(i = 0; i < num_threads;i++)
- 	{
- 		entering[i] = 0;
- 		tickets[i] = 0;
- 	}
- 	
  	for(i = 0; i < num_threads; i++)
  	{
  		infos[i].n = 0;

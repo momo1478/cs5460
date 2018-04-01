@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 
 	if(argc != 3)
 	{
-		printf("Incorrect number of args \n.");
+		fprintf(stderr,"Incorrect number of args \n.");
 		return 1;
 	}
 
@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 
 	if(num_threads == 0 || num_seconds == 0)	
 	{		
-		printf("Invalid arguments.\n");
+		fprintf(stderr,"Invalid arguments.\n");
 		return 1;
 	}
 
@@ -50,9 +50,9 @@ int main(int argc, char **argv)
 	tickets  = malloc(num_threads * sizeof(int));
 	threads  = malloc(num_threads * sizeof(pthread_t));
 
-	if(entering == NULL || tickets == NULL)
+	if(entering == NULL || tickets == NULL || infos == NULL || threads == NULL)
 	{
-		printf("malloc failed \n");
+		fprintf(stderr,"malloc failed \n");
 		return 1;
 	}
  	
@@ -73,7 +73,11 @@ int main(int argc, char **argv)
 
  	for(i = 0; i < num_threads; i++)
  	{
- 		pthread_create(&threads[i], NULL, Thread, &infos[i]);
+ 		if(pthread_create(&threads[i], NULL, Thread, &infos[i]))
+ 		{
+ 			fprintf(stderr, "thread could not be created.\n");
+ 			return 1;
+ 		}
  	}
 
  	sleep(num_seconds);
@@ -82,7 +86,11 @@ int main(int argc, char **argv)
  	
  	for(i = 0; i < num_threads; i++)
  	{
- 		pthread_join(threads[i], NULL);
+ 		if(pthread_join(threads[i], NULL))
+ 		{
+ 			fprintf(stderr, "Could not join thread.\n");
+ 			return 1;
+ 		}
  		printf("Thread %d entered the critical section %d times!\n", i, (int)(infos[i].n) );
  	}
  	return 0;
@@ -110,7 +118,7 @@ void lock(int i)
      int j;
      for (j = 0; j < num_threads; j++)
      {
-     	//if(i != j)
+     	if(i != j)
      	{
 	        while (entering[j] != 0) 
 	        { /* nothing */ }
@@ -132,7 +140,6 @@ void unlock(int i)
 
 void * Thread(void * info)
 {
-	//printf("tnum = %d and n = %d and in_cs = %d\n", tn ,(((t_info*)info)->n), in_cs);
 	while(sleepFlag)
 	{	
 		int tn = ((t_info*)info)->tnum;
