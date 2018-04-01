@@ -50,9 +50,10 @@ void * Thread()
 
 	while(sleepFlag)
 	{		
-		pthread_mutex_lock(&lock);
-			double x = (double)rand() / (double)(RAND_MAX);
-			double y = (double)rand() / (double)(RAND_MAX);
+		double x = (double)rand() / (double)(RAND_MAX);
+		double y = (double)rand() / (double)(RAND_MAX);
+	    
+	    pthread_mutex_lock(&lock);
 			total++;
 
 			if( ((x * x) + (y * y)) <= 1)
