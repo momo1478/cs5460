@@ -72,7 +72,8 @@ void unlock(int i)
 
 void * Thread(void * info)
 {
-	//It's unnecessary to put fences in the critical section because the locks should 
+	//It's unnecessary to put mfences in the critical section because the lock should ensure that only one thread is in the critical section at a time. 
+	//mfences should only be placed within the lock() and unlock() functions because, as previous stated, only one thread should be in between both calls.
 	while(sleepFlag)
 	{	
 		int tn = ((t_info*)info)->tnum;
