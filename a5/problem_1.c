@@ -27,6 +27,8 @@ volatile int cat_play;
 volatile int dog_play;
 volatile int bird_play;
 
+volatile int sleepFlag;
+
 t_info* infos;
 pthread_t* threads;
 
@@ -61,7 +63,7 @@ int main(int argc, char **argv)
 	}
 
 	total_animals = num_dogs + num_cats + num_birds;
-	if(total_animals > 99 || total_animals < 0)
+	if(total_animals > 298 || total_animals < 0)
 	{
 		fprintf(stderr,"total number of animals must be between 0-99.\n");
 		return 1;
@@ -81,6 +83,11 @@ int main(int argc, char **argv)
 		fprintf(stderr,"mutex or condition variable cannot be initialized.\n");
 		return 1;
 	}
+
+	cat_play = 0; dog_play = 0; bird_play = 0;
+	c_box = 0; d_box = 0; b_box = 0;
+	
+	sleepFlag = 1;
 
 	int i;
  	for(i = 0; i < num_cats; i++)
@@ -110,7 +117,9 @@ int main(int argc, char **argv)
  		}
  	}
 
+ 	
  	sleep(10);
+ 	sleepFlag = 0;
  	
  	for(i = 0; i < total_animals; i++)
  	{
@@ -126,46 +135,65 @@ int main(int argc, char **argv)
 
 void* cat_enter(void* info)
 {
-	pthread_mutex_lock(&mu);
- 	while (d_box != 0 && b_box != 0)
- 	{
- 		pthread_cond_wait(&cv, &mu);
- 	} 
- 	c_box++;
- 	play();
- 	cat_play++;
- 	cat_exit();
- 	pthread_mutex_unlock(&mu);
+
+	while(sleepFlag)
+	{
+		pthread_mutex_lock(&mu);
+	 	while (d_box != 0 && b_box != 0)
+	 	{
+	 		pthread_mutex_unlock(&mu);
+	 		pthread_cond_wait(&cv, &mu);
+	 		pthread_mutex_lock(&mu);
+	 	}
+	 	c_box++;
+	 	play();
+	 	cat_play++;
+	 	cat_exit();
+	 	pthread_mutex_unlock(&mu);
+ 	}
+
 	return NULL;
 }
 
 void* dog_enter(void* info)
 {
-	pthread_mutex_lock(&mu);
- 	while (c_box != 0)
- 	{
- 		pthread_cond_wait(&cv, &mu);
- 	} 
- 	d_box++;
- 	play();
- 	dog_play++;
- 	dog_exit();
- 	pthread_mutex_unlock(&mu);
+	while(sleepFlag)
+	{
+		pthread_mutex_lock(&mu);
+	 	while (c_box != 0)
+	 	{
+	 		pthread_mutex_unlock(&mu);
+	 		pthread_cond_wait(&cv, &mu);
+	 		pthread_mutex_lock(&mu);
+	 	}
+	 	d_box++;
+	 	play();
+	 	dog_play++;
+	 	dog_exit();
+	 	pthread_mutex_unlock(&mu);
+ 	}
+ 	
 	return NULL;
 }
 
 void* bird_enter(void* info)
 {
-	pthread_mutex_lock(&mu);
- 	while (c_box != 0)
- 	{
- 		pthread_cond_wait(&cv, &mu);
- 	} 
- 	b_box++;
- 	play();
- 	bird_play++;
- 	bird_exit();
- 	pthread_mutex_unlock(&mu);
+	while(sleepFlag)
+	{
+		pthread_mutex_lock(&mu);
+	 	while (c_box != 0)
+	 	{
+	 		pthread_mutex_unlock(&mu);
+	 		pthread_cond_wait(&cv, &mu);
+	 		pthread_mutex_lock(&mu);
+	 	}
+	 	b_box++;
+	 	play();
+	 	bird_play++;
+	 	bird_exit();
+	 	pthread_mutex_unlock(&mu);
+	}
+
 	return NULL;
 }
 
