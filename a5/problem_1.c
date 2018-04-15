@@ -117,7 +117,6 @@ int main(int argc, char **argv)
  		}
  	}
 
- 	
  	sleep(10);
  	sleepFlag = 0;
  	
@@ -149,7 +148,6 @@ void* cat_enter(void* info)
 	 	cat_play++;
 	 	pthread_mutex_unlock(&mu);
 	 	cat_exit();
-	 	
  	}
 
 	return NULL;
@@ -171,7 +169,7 @@ void* dog_enter(void* info)
 	 	dog_play++;
 	 	pthread_mutex_unlock(&mu);
 	 	dog_exit();
-	 	
+
  	}
  	
 	return NULL;
