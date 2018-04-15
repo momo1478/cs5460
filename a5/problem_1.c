@@ -76,12 +76,13 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	if(pthread_mutex_init(&mu) || pthread_cond_init(&cv))
+	if(pthread_mutex_init(&mu,NULL) || pthread_cond_init(&cv,NULL))
 	{
 		fprintf(stderr,"mutex or condition variable cannot be initialized.\n");
 		return 1;
 	}
 
+	int i;
  	for(i = 0; i < num_cats; i++)
  	{
  		if(pthread_create(&threads[i], NULL, cat_enter, NULL))
@@ -168,19 +169,19 @@ void* bird_enter(void* info)
 	return NULL;
 }
 
-void cat_exit()
+void cat_exit(void)
 {
 	c_box--;
 	pthread_cond_signal(&cv);
 }
 
-void dog_exit()
+void dog_exit(void)
 {
 	d_box--;
 	pthread_cond_signal(&cv);
 }
 
-void bird_exit()
+void bird_exit(void)
 {
 	b_box--;
 	pthread_cond_signal(&cv);
