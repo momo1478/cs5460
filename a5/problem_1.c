@@ -135,7 +135,6 @@ int main(int argc, char **argv)
 
 void* cat_enter(void* info)
 {
-
 	while(sleepFlag)
 	{
 		pthread_mutex_lock(&mu);
@@ -148,8 +147,9 @@ void* cat_enter(void* info)
 	 	c_box++;
 	 	play();
 	 	cat_play++;
-	 	cat_exit();
 	 	pthread_mutex_unlock(&mu);
+	 	cat_exit();
+	 	
  	}
 
 	return NULL;
@@ -169,8 +169,9 @@ void* dog_enter(void* info)
 	 	d_box++;
 	 	play();
 	 	dog_play++;
-	 	dog_exit();
 	 	pthread_mutex_unlock(&mu);
+	 	dog_exit();
+	 	
  	}
  	
 	return NULL;
@@ -190,8 +191,8 @@ void* bird_enter(void* info)
 	 	b_box++;
 	 	play();
 	 	bird_play++;
-	 	bird_exit();
 	 	pthread_mutex_unlock(&mu);
+	 	bird_exit();
 	}
 
 	return NULL;
@@ -199,20 +200,26 @@ void* bird_enter(void* info)
 
 void cat_exit(void)
 {
+	pthread_mutex_lock(&mu);
 	c_box--;
 	pthread_cond_signal(&cv);
+	pthread_mutex_unlock(&mu);
 }
 
 void dog_exit(void)
 {
+	pthread_mutex_lock(&mu);
 	d_box--;
 	pthread_cond_signal(&cv);
+	pthread_mutex_unlock(&mu);
 }
 
 void bird_exit(void)
 {
+	pthread_mutex_lock(&mu);
 	b_box--;
 	pthread_cond_signal(&cv);
+	pthread_mutex_unlock(&mu);
 }
 
 void play(void)
