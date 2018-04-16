@@ -12,7 +12,9 @@ typedef struct t_info
 } t_info;
 
 pthread_mutex_t mu;
-pthread_cond_t cv;
+pthread_cond_t c_cv;
+pthread_cond_t d_cv;
+pthread_cond_t b_cv;
 
 int num_birds;
 int num_cats;
@@ -78,7 +80,8 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	if(pthread_mutex_init(&mu,NULL) || pthread_cond_init(&cv,NULL))
+	if(pthread_mutex_init(&mu,NULL) || 
+	   pthread_cond_init(&c_cv,NULL)  || pthread_cond_init(&d_cv,NULL) || pthread_cond_init(&b_cv,NULL))
 	{
 		fprintf(stderr,"mutex or condition variable cannot be initialized.\n");
 		return 1;
@@ -140,14 +143,14 @@ void* cat_enter(void* info)
 	 	while (d_box != 0 && b_box != 0)
 	 	{
 	 		pthread_mutex_unlock(&mu);
-	 		pthread_cond_wait(&cv, &mu);
+	 		pthread_cond_wait(&c_cv, &mu);
 	 		pthread_mutex_lock(&mu);
 	 	}
 	 	c_box++;
 	 	play();
 	 	cat_play++;
-	 	pthread_mutex_unlock(&mu);
 	 	cat_exit();
+	 	pthread_mutex_unlock(&mu);
  	}
 
 	return NULL;
@@ -161,14 +164,14 @@ void* dog_enter(void* info)
 	 	while (c_box != 0)
 	 	{
 	 		pthread_mutex_unlock(&mu);
-	 		pthread_cond_wait(&cv, &mu);
+	 		pthread_cond_wait(&d_cv, &mu);
 	 		pthread_mutex_lock(&mu);
 	 	}
 	 	d_box++;
 	 	play();
 	 	dog_play++;
-	 	pthread_mutex_unlock(&mu);
 	 	dog_exit();
+	 	pthread_mutex_unlock(&mu);
 
  	}
  	
@@ -183,14 +186,14 @@ void* bird_enter(void* info)
 	 	while (c_box != 0)
 	 	{
 	 		pthread_mutex_unlock(&mu);
-	 		pthread_cond_wait(&cv, &mu);
+	 		pthread_cond_wait(&b_cv, &mu);
 	 		pthread_mutex_lock(&mu);
 	 	}
 	 	b_box++;
 	 	play();
 	 	bird_play++;
-	 	pthread_mutex_unlock(&mu);
 	 	bird_exit();
+	 	pthread_mutex_unlock(&mu);
 	}
 
 	return NULL;
@@ -198,26 +201,21 @@ void* bird_enter(void* info)
 
 void cat_exit(void)
 {
-	pthread_mutex_lock(&mu);
 	c_box--;
-	pthread_cond_signal(&cv);
-	pthread_mutex_unlock(&mu);
+	pthread_cond_signal(&d_cv);
+	pthread_cond_signal(&b_cv);
 }
 
 void dog_exit(void)
 {
-	pthread_mutex_lock(&mu);
 	d_box--;
-	pthread_cond_signal(&cv);
-	pthread_mutex_unlock(&mu);
+	pthread_cond_signal(&c_cv);
 }
 
 void bird_exit(void)
 {
-	pthread_mutex_lock(&mu);
 	b_box--;
-	pthread_cond_signal(&cv);
-	pthread_mutex_unlock(&mu);
+	pthread_cond_signal(&c_cv);
 }
 
 void play(void)
