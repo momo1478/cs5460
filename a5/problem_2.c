@@ -8,9 +8,12 @@
 #include <dirent.h>
 #include <sys/param.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <errno.h>
 
 unsigned int crc32(unsigned int crc, const void *buf, size_t size);
+bool is_dir(const char* path);
+bool is_file(const char* path);
 
 int main(int argc, char **argv)
 {
@@ -39,10 +42,8 @@ int main(int argc, char **argv)
        			continue;
        		}
 
-       		DIR *dirTest = opendir(namelist[i]->d_name);
-       		if(dirTest != NULL || errno != ENOTDIR)
+       		if(!is_file(namelist[i]->d_name))
        		{
-       			closedir(dirTest);
        			continue;
        		}
 
@@ -61,7 +62,7 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				printf("ACCESS ERROR on %s\n",namelist[i]->d_name);
+				printf("ACCESS ERROR\n");
 			}
        }
    }
@@ -124,4 +125,16 @@ unsigned int crc32(unsigned int crc, const void *buf, size_t size)
 		crc = crc32_tab[(crc ^ *p++) & 0xFF] ^ (crc >> 8);
 
 	return crc ^ ~0U;
+}
+
+bool is_file(const char* path) {
+    struct stat buf;
+    stat(path, &buf);
+    return S_ISREG(buf.st_mode);
+}
+
+bool is_dir(const char* path) {
+    struct stat buf;
+    stat(path, &buf);
+    return S_ISDIR(buf.st_mode);
 }
