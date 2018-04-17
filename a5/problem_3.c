@@ -11,9 +11,22 @@
 #include <sys/stat.h>
 #include <errno.h>
 
+pthread_mutex_t mu;
+
+volatile int indexToChecksum;
+int num_threads;
+int num_files;
+struct dirent **namelist;
+char *inputPath;
+pthread_t* threads;
+
 unsigned int crc32(unsigned int crc, const void *buf, size_t size);
 bool is_dir(const char* path);
 bool is_file(const char* path);
+
+void performChecksums();
+void performChecksum(int i);
+int getIndexToChecksum();
 
 int main(int argc, char **argv)
 {
@@ -22,64 +35,116 @@ int main(int argc, char **argv)
 		fprintf(stderr,"Incorrect number of args.\n");
 		return 1;
 	}
+   
+   num_threads= strtol(argv[2], NULL, 10);
+   if(num_threads <= 0)	
+	{		
+		fprintf(stderr,"Invalid arguments.\n");
+		return 1;
+	}
 
-   struct dirent **namelist;
-   int n;
+	threads  = malloc(num_threads * sizeof(pthread_t));
+	if(threads == NULL)
+	{
+		fprintf(stderr,"malloc failed \n");
+		return 1;
+	}
 
-   n = scandir(argv[1], &namelist, 0, alphasort);
-   if (n < 0)
+   indexToChecksum = 0;
+   num_files = scandir(argv[1], &namelist, 0, alphasort);
+   if (num_files < 0)
    {
        fprintf(stderr,"Cannot open directory or file is not a directory.\n");
    }
    else 
    {
-   	   int i;
-       for(i = 0; i < n; i++)
-       {
-       		if(strcmp(namelist[i]->d_name, ".") == 0||
-       		   strcmp(namelist[i]->d_name, "..") == 0)
-       		{
-       			continue;
-       		}
-
-       		char *completeFilePath = malloc(strlen(namelist[i]->d_name) + strlen(argv[1]) + 3);
-       		strcpy(completeFilePath, argv[1]);
-
-       		if(completeFilePath[strlen(completeFilePath) - 1] != '/')
-       		{
-       			strcat(completeFilePath, "/");
-       		}
-       		strcat(completeFilePath,namelist[i]->d_name); 
-       		//printf("completeFilePath is %s\n",completeFilePath);
-
-       		if(!is_file(completeFilePath))
-       		{
-       			continue;
-       		}
-
-			FILE *file;
-			file = fopen(completeFilePath, "r");
-			unsigned int checksum = 0;
-			if (file) 
-			{
-				fseek(file, 0, SEEK_END);
-				long fsize = ftell(file);
-				fseek(file, 0, SEEK_SET);
-				char *filebuf = malloc(fsize + 1);
-				fread(filebuf, fsize, 1, file);
-				checksum = crc32(0, filebuf, fsize);
-				printf("%s has checksum = 0x%x\n", completeFilePath, checksum);
-			}
-			else
-			{
-				printf("ACCESS ERROR\n");
-			}
-			free(completeFilePath);
-       }
-       free(namelist);
+   	inputPath = malloc(sizeof(argv[1]));
+   	if(inputPath == NULL)
+   	{
+   		fprintf(stderr,"malloc failed \n");
+		return 1;
+   	}
+   	inputPath = strcpy(inputPath,argv[1]);
+    
+    int j;
+ 	for(j = 0; j < num_threads; j++)
+ 	{
+ 		if(pthread_create(&threads[j], NULL, performChecksums, NULL))
+ 		{
+ 			fprintf(stderr, "thread could not be created.\n");
+ 			return 1;
+ 		}
+ 	}
+ 	free(inputPath);
    }
     return 0;
 }
+
+void performChecksums()
+{
+	while(indexToChecksum < num_files)
+	{
+		performChecksum(getIndexToChecksum());
+	}
+}
+
+int getIndexToChecksum()
+{
+	pthread_mutex_lock(&mu);
+	indexToChecksum++;
+	pthread_mutex_unlock(&mu);
+	return indexToChecksum;
+}
+
+void performChecksum(int i)
+{
+	if(strcmp(namelist[i]->d_name, ".") == 0||
+       strcmp(namelist[i]->d_name, "..") == 0)
+   		{
+   			continue;
+   		}
+
+   		char *completeFilePath = malloc(strlen(namelist[i]->d_name) + strlen(inputPath) + 3);
+   		if(completeFilePath == NULL)
+   		{
+			fprintf(stderr,"malloc failed \n");
+			return 1;
+		}
+
+   		strcpy(completeFilePath, inputPath);
+
+   		if(completeFilePath[strlen(completeFilePath) - 1] != '/')
+   		{
+   			strcat(completeFilePath, "/");
+   		}
+   		strcat(completeFilePath,namelist[i]->d_name); 
+   		//printf("completeFilePath is %s\n",completeFilePath);
+
+   		if(!is_file(completeFilePath))
+   		{
+   			continue;
+   		}
+
+		FILE *file;
+		file = fopen(completeFilePath, "r");
+		unsigned int checksum = 0;
+		if (file) 
+		{
+			fseek(file, 0, SEEK_END);
+			long fsize = ftell(file);
+			fseek(file, 0, SEEK_SET);
+			char *filebuf = malloc(fsize + 1);
+			fread(filebuf, fsize, 1, file);
+			checksum = crc32(0, filebuf, fsize);
+			printf("%s has checksum = 0x%x\n", completeFilePath, checksum);
+		}
+		else
+		{
+			printf("ACCESS ERROR\n");
+		}
+		free(completeFilePath);
+}
+
 static unsigned int crc32_tab[] = {
 	0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
 	0xe963a535, 0x9e6495a3,	0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
