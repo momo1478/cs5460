@@ -10,7 +10,7 @@ problem_2: problem_2.o
 	$(CC) $(CFLAGS) problem_2.c -o problem_2
 
 problem_3: problem_3.o
-	$(CC) $(CFLAGS) problem_3.c -o problem_3
+	$(CC) $(CFLAGS) -g problem_3.c -o problem_3
 
 clean:
 	rm -f *.o problem_1 problem_2 problem_3

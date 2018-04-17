@@ -53,12 +53,12 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-    num_cats = strtol(argv[1], NULL, 10);
+	num_cats = strtol(argv[1], NULL, 10);
 	num_dogs = strtol(argv[2], NULL, 10);
 	num_birds = strtol(argv[3], NULL, 10);
 
 	if(num_cats == 0 || num_dogs == 0 || num_birds == 0 ||
-	   num_cats < 0  || num_dogs < 0  || num_birds < 0   )	
+		num_cats < 0  || num_dogs < 0  || num_birds < 0   )	
 	{		
 		fprintf(stderr,"Invalid arguments.\n");
 		return 1;
@@ -81,7 +81,7 @@ int main(int argc, char **argv)
 	}
 
 	if(pthread_mutex_init(&mu,NULL) || 
-	   pthread_cond_init(&c_cv,NULL)  || pthread_cond_init(&d_cv,NULL) || pthread_cond_init(&b_cv,NULL))
+		pthread_cond_init(&c_cv,NULL)  || pthread_cond_init(&d_cv,NULL) || pthread_cond_init(&b_cv,NULL))
 	{
 		fprintf(stderr,"mutex or condition variable cannot be initialized.\n");
 		return 1;
@@ -93,46 +93,46 @@ int main(int argc, char **argv)
 	sleepFlag = 1;
 
 	int i;
- 	for(i = 0; i < num_cats; i++)
- 	{
- 		if(pthread_create(&threads[i], NULL, cat_enter, NULL))
- 		{
- 			fprintf(stderr, "thread could not be created.\n");
- 			return 1;
- 		}
- 	}
+	for(i = 0; i < num_cats; i++)
+	{
+		if(pthread_create(&threads[i], NULL, cat_enter, NULL))
+		{
+			fprintf(stderr, "thread could not be created.\n");
+			return 1;
+		}
+	}
 
- 	for(i = num_cats; i < num_cats + num_dogs; i++)
- 	{
- 		if(pthread_create(&threads[i], NULL, dog_enter, NULL))
- 		{
- 			fprintf(stderr, "thread could not be created.\n");
- 			return 1;
- 		}
- 	}
+	for(i = num_cats; i < num_cats + num_dogs; i++)
+	{
+		if(pthread_create(&threads[i], NULL, dog_enter, NULL))
+		{
+			fprintf(stderr, "thread could not be created.\n");
+			return 1;
+		}
+	}
 
- 	for(i = num_cats + num_dogs; i < total_animals; i++)
- 	{
- 		if(pthread_create(&threads[i], NULL, bird_enter, NULL))
- 		{
- 			fprintf(stderr, "thread could not be created.\n");
- 			return 1;
- 		}
- 	}
+	for(i = num_cats + num_dogs; i < total_animals; i++)
+	{
+		if(pthread_create(&threads[i], NULL, bird_enter, NULL))
+		{
+			fprintf(stderr, "thread could not be created.\n");
+			return 1;
+		}
+	}
 
- 	sleep(10);
- 	sleepFlag = 0;
- 	
- 	for(i = 0; i < total_animals; i++)
- 	{
- 		if(pthread_join(threads[i], NULL))
- 		{
- 			fprintf(stderr, "Could not join thread.\n");
- 			return 1;
- 		}	
- 	}
- 	printf("cat play = %d, dog play = %d, bird play = %d\n", cat_play, dog_play, bird_play);
- 	return 0;
+	sleep(10);
+	sleepFlag = 0;
+	
+	for(i = 0; i < total_animals; i++)
+	{
+		if(pthread_join(threads[i], NULL))
+		{
+			fprintf(stderr, "Could not join thread.\n");
+			return 1;
+		}	
+	}
+	printf("cat play = %d, dog play = %d, bird play = %d\n", cat_play, dog_play, bird_play);
+	return 0;
 }
 
 void* cat_enter(void* info)
@@ -140,18 +140,18 @@ void* cat_enter(void* info)
 	while(sleepFlag)
 	{
 		pthread_mutex_lock(&mu);
-	 	while (d_box != 0 && b_box != 0)
-	 	{
-	 		pthread_mutex_unlock(&mu);
-	 		pthread_cond_wait(&c_cv, &mu);
-	 		pthread_mutex_lock(&mu);
-	 	}
-	 	c_box++;
-	 	play();
-	 	cat_play++;
-	 	cat_exit();
-	 	pthread_mutex_unlock(&mu);
- 	}
+		while (d_box != 0 && b_box != 0)
+		{
+			pthread_mutex_unlock(&mu);
+			pthread_cond_wait(&c_cv, &mu);
+			pthread_mutex_lock(&mu);
+		}
+		c_box++;
+		play();
+		cat_play++;
+		cat_exit();
+		pthread_mutex_unlock(&mu);
+	}
 
 	return NULL;
 }
@@ -161,20 +161,20 @@ void* dog_enter(void* info)
 	while(sleepFlag)
 	{
 		pthread_mutex_lock(&mu);
-	 	while (c_box != 0)
-	 	{
-	 		pthread_mutex_unlock(&mu);
-	 		pthread_cond_wait(&d_cv, &mu);
-	 		pthread_mutex_lock(&mu);
-	 	}
-	 	d_box++;
-	 	play();
-	 	dog_play++;
-	 	dog_exit();
-	 	pthread_mutex_unlock(&mu);
+		while (c_box != 0)
+		{
+			pthread_mutex_unlock(&mu);
+			pthread_cond_wait(&d_cv, &mu);
+			pthread_mutex_lock(&mu);
+		}
+		d_box++;
+		play();
+		dog_play++;
+		dog_exit();
+		pthread_mutex_unlock(&mu);
 
- 	}
- 	
+	}
+	
 	return NULL;
 }
 
@@ -183,17 +183,17 @@ void* bird_enter(void* info)
 	while(sleepFlag)
 	{
 		pthread_mutex_lock(&mu);
-	 	while (c_box != 0)
-	 	{
-	 		pthread_mutex_unlock(&mu);
-	 		pthread_cond_wait(&b_cv, &mu);
-	 		pthread_mutex_lock(&mu);
-	 	}
-	 	b_box++;
-	 	play();
-	 	bird_play++;
-	 	bird_exit();
-	 	pthread_mutex_unlock(&mu);
+		while (c_box != 0)
+		{
+			pthread_mutex_unlock(&mu);
+			pthread_cond_wait(&b_cv, &mu);
+			pthread_mutex_lock(&mu);
+		}
+		b_box++;
+		play();
+		bird_play++;
+		bird_exit();
+		pthread_mutex_unlock(&mu);
 	}
 
 	return NULL;
@@ -220,11 +220,11 @@ void bird_exit(void)
 
 void play(void)
 {
-  for (int i=0; i<10; i++) {
-    assert(c_box >= 0 && c_box <= num_cats);
-    assert(d_box >= 0 && d_box <= num_dogs);
-    assert(b_box >= 0 && b_box <= num_birds);
-    assert(c_box == 0 || d_box == 0);
-    assert(c_box == 0 || b_box == 0);
-   }
+	for (int i=0; i<10; i++) {
+		assert(c_box >= 0 && c_box <= num_cats);
+		assert(d_box >= 0 && d_box <= num_dogs);
+		assert(b_box >= 0 && b_box <= num_birds);
+		assert(c_box == 0 || d_box == 0);
+		assert(c_box == 0 || b_box == 0);
+	}
 }

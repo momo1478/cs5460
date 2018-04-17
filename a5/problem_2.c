@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 				char *filebuf = malloc(fsize + 1);
 				fread(filebuf, fsize, 1, file);
 				checksum = crc32(0, filebuf, fsize);
-				printf("%s has checksum = 0x%x\n", completeFilePath, checksum);
+				printf("%s has checksum = 0x%08X\n", completeFilePath, checksum);
 			}
 			else
 			{

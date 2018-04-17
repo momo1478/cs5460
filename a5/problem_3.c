@@ -11,33 +11,41 @@
 #include <sys/stat.h>
 #include <errno.h>
 
+typedef struct c_info 
+{
+	char *completeFilePath;
+	unsigned int checksum;
+	int valid;
+} c_info;
+
 pthread_mutex_t mu;
+pthread_cond_t cv;
 
 volatile int indexToChecksum;
 int num_threads;
 int num_files;
 struct dirent **namelist;
 char *inputPath;
+volatile c_info *checksums;
 pthread_t* threads;
 
 unsigned int crc32(unsigned int crc, const void *buf, size_t size);
 bool is_dir(const char* path);
 bool is_file(const char* path);
 
-void performChecksums();
+void *performChecksums(void *info);
 void performChecksum(int i);
-int getIndexToChecksum();
 
 int main(int argc, char **argv)
 {
-	if(argc != 2)
+	if(argc != 3)
 	{
 		fprintf(stderr,"Incorrect number of args.\n");
 		return 1;
 	}
-   
-   num_threads= strtol(argv[2], NULL, 10);
-   if(num_threads <= 0)	
+
+	num_threads = strtol(argv[2], NULL, 10);
+	if(num_threads <= 0)	
 	{		
 		fprintf(stderr,"Invalid arguments.\n");
 		return 1;
@@ -50,99 +58,135 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-   indexToChecksum = 0;
-   num_files = scandir(argv[1], &namelist, 0, alphasort);
-   if (num_files < 0)
-   {
-       fprintf(stderr,"Cannot open directory or file is not a directory.\n");
-   }
-   else 
-   {
-   	inputPath = malloc(sizeof(argv[1]));
-   	if(inputPath == NULL)
-   	{
-   		fprintf(stderr,"malloc failed \n");
-		return 1;
-   	}
-   	inputPath = strcpy(inputPath,argv[1]);
-    
-    int j;
- 	for(j = 0; j < num_threads; j++)
- 	{
- 		if(pthread_create(&threads[j], NULL, performChecksums, NULL))
- 		{
- 			fprintf(stderr, "thread could not be created.\n");
- 			return 1;
- 		}
- 	}
- 	free(inputPath);
-   }
-    return 0;
-}
-
-void performChecksums()
-{
-	while(indexToChecksum < num_files)
+	if(pthread_mutex_init(&mu,NULL) || pthread_cond_init(&cv,NULL))
 	{
-		performChecksum(getIndexToChecksum());
+		fprintf(stderr,"mutex or condition variable cannot be initialized.\n");
+		return 1;
 	}
-}
 
-int getIndexToChecksum()
-{
-	pthread_mutex_lock(&mu);
-	indexToChecksum++;
-	pthread_mutex_unlock(&mu);
-	return indexToChecksum;
-}
+	indexToChecksum = 0;
+	num_files = scandir(argv[1], &namelist, 0, alphasort);
+	if (num_files < 0)
+	{
+		fprintf(stderr,"Cannot open directory or file is not a directory.\n");
+	}
+	else 
+	{
+		inputPath = malloc(sizeof(argv[1]));
+		if(inputPath == NULL)
+		{
+			fprintf(stderr,"malloc failed \n");
+			return 1;
+		}
+		inputPath = strcpy(inputPath,argv[1]);
 
-void performChecksum(int i)
-{
-	if(strcmp(namelist[i]->d_name, ".") == 0||
-       strcmp(namelist[i]->d_name, "..") == 0)
-   		{
-   			continue;
-   		}
-
-   		char *completeFilePath = malloc(strlen(namelist[i]->d_name) + strlen(inputPath) + 3);
-   		if(completeFilePath == NULL)
-   		{
+		checksums = malloc(num_files * sizeof(c_info));
+		if(checksums == NULL)
+		{
 			fprintf(stderr,"malloc failed \n");
 			return 1;
 		}
 
-   		strcpy(completeFilePath, inputPath);
-
-   		if(completeFilePath[strlen(completeFilePath) - 1] != '/')
-   		{
-   			strcat(completeFilePath, "/");
-   		}
-   		strcat(completeFilePath,namelist[i]->d_name); 
-   		//printf("completeFilePath is %s\n",completeFilePath);
-
-   		if(!is_file(completeFilePath))
-   		{
-   			continue;
-   		}
-
-		FILE *file;
-		file = fopen(completeFilePath, "r");
-		unsigned int checksum = 0;
-		if (file) 
+		int j;
+		for(j = 0; j < num_threads; j++)
 		{
-			fseek(file, 0, SEEK_END);
-			long fsize = ftell(file);
-			fseek(file, 0, SEEK_SET);
-			char *filebuf = malloc(fsize + 1);
-			fread(filebuf, fsize, 1, file);
-			checksum = crc32(0, filebuf, fsize);
-			printf("%s has checksum = 0x%x\n", completeFilePath, checksum);
+			if(pthread_create(&threads[j], NULL, performChecksums, NULL))
+			{
+				fprintf(stderr, "thread could not be created.\n");
+				return 1;
+			}
 		}
-		else
+
+		for(j = 0; j < num_threads; j++)
 		{
-			printf("ACCESS ERROR\n");
+			if(pthread_join(threads[j], NULL))
+			{
+				fprintf(stderr, "Could not join thread.\n");
+				return 1;
+			}	
 		}
-		free(completeFilePath);
+
+		for(j = 2; j < num_files; j++)
+		{
+			if(checksums[j].valid == 1)
+				printf("%s has checksum = 0x%08X\n", checksums[j].completeFilePath, checksums[j].checksum);
+			else if(checksums[j].valid == 0)
+				printf("ACCESS ERROR\n");
+		}
+	}
+	return 0;
+}
+
+void *performChecksums(void *info)
+{
+	while(indexToChecksum < num_files)
+	{
+		printf("indexToChecksum = %d\n",indexToChecksum);
+		performChecksum(indexToChecksum);
+		pthread_mutex_lock(&mu);	
+		indexToChecksum++;
+		pthread_mutex_unlock(&mu);
+		pthread_cond_wait(&cv,&mu);
+	}
+	return NULL;
+}
+
+void performChecksum(int i)
+{ 
+	if(strcmp(namelist[i]->d_name, ".") == 0||
+		strcmp(namelist[i]->d_name, "..") == 0)
+	{
+		checksums[i].valid = 2;
+		pthread_cond_signal(&cv);
+		return;
+	}
+
+	char *completeFilePath = malloc(strlen(namelist[i]->d_name) + strlen(inputPath) + 3);
+	if(completeFilePath == NULL)
+	{
+		checksums[i].valid = 0;
+		fprintf(stderr,"unable to perform checksum, malloc failed\n");
+		pthread_cond_signal(&cv);
+		return;
+	}
+
+	strcpy(completeFilePath, inputPath);
+
+	if(completeFilePath[strlen(completeFilePath) - 1] != '/')
+	{
+		strcat(completeFilePath, "/");
+	}
+	strcat(completeFilePath,namelist[i]->d_name); 
+
+	if(!is_file(completeFilePath))
+	{
+		checksums[i].valid = 2;
+		pthread_cond_signal(&cv);
+		return;
+	}
+
+	FILE *file;
+	file = fopen(completeFilePath, "r");
+	unsigned int checksum = 0;
+	if (file) 
+	{
+		fseek(file, 0, SEEK_END);
+		long fsize = ftell(file);
+		fseek(file, 0, SEEK_SET);
+		char *filebuf = malloc(fsize + 1);
+		fread(filebuf, fsize, 1, file);
+		checksum = crc32(0, filebuf, fsize);
+		
+		checksums[i].valid = 1;
+		checksums[i].checksum = checksum;
+		checksums[i].completeFilePath = completeFilePath;
+		pthread_cond_signal(&cv);
+	}
+	else
+	{
+		checksums[i].valid = 0;
+		pthread_cond_signal(&cv);
+	}
 }
 
 static unsigned int crc32_tab[] = {
@@ -205,13 +249,13 @@ unsigned int crc32(unsigned int crc, const void *buf, size_t size)
 }
 
 bool is_file(const char* path) {
-    struct stat buf;
-    stat(path, &buf);
-    return S_ISREG(buf.st_mode);
+	struct stat buf;
+	stat(path, &buf);
+	return S_ISREG(buf.st_mode);
 }
 
 bool is_dir(const char* path) {
-    struct stat buf;
-    stat(path, &buf);
-    return S_ISDIR(buf.st_mode);
+	struct stat buf;
+	stat(path, &buf);
+	return S_ISDIR(buf.st_mode);
 }
