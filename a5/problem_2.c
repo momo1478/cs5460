@@ -42,13 +42,23 @@ int main(int argc, char **argv)
        			continue;
        		}
 
-       		if(!is_file(namelist[i]->d_name))
+       		char *completeFilePath = malloc(strlen(namelist[i]->d_name) + strlen(argv[1]) + 3);
+       		strcpy(completeFilePath, argv[1]);
+
+       		if(completeFilePath[strlen(completeFilePath) - 1] != '/')
+       		{
+       			strcat(completeFilePath, "/");
+       		}
+       		strcat(completeFilePath,namelist[i]->d_name); 
+       		//printf("completeFilePath is %s\n",completeFilePath);
+
+       		if(!is_file(completeFilePath))
        		{
        			continue;
        		}
 
 			FILE *file;
-			file = fopen(namelist[i]->d_name, "r");
+			file = fopen(completeFilePath, "r");
 			unsigned int checksum = 0;
 			if (file) 
 			{
@@ -58,13 +68,15 @@ int main(int argc, char **argv)
 				char *filebuf = malloc(fsize + 1);
 				fread(filebuf, fsize, 1, file);
 				checksum = crc32(0, filebuf, fsize);
-				printf("%s has checksum = 0x%x\n", namelist[i]->d_name, checksum);
+				printf("%s has checksum = 0x%x\n", completeFilePath, checksum);
 			}
 			else
 			{
 				printf("ACCESS ERROR\n");
 			}
+			free(completeFilePath);
        }
+       free(namelist);
    }
     return 0;
 }

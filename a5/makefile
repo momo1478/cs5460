@@ -5,7 +5,7 @@ problem_1: problem_1.o
 	$(CC) $(CFLAGS) problem_1.c -o problem_1
 
 problem_2: problem_2.o
-	$(CC) $(CFLAGS) problem_2.c -o problem_2
+	$(CC) $(CFLAGS) -g problem_2.c -o problem_2
 
 problem_3: problem_3.o
 	$(CC) $(CFLAGS) problem_3.c -o problem_3
